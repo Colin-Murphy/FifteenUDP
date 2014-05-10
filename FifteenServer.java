@@ -2,9 +2,7 @@
 
 //ONLY NEEDED IN TCP VERSION, REMOVE IN UDP VERSION
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-
+import java.net.DatagramSocket;
 /**
 	Runs the Fifteen Server to the specifications defined by COPADS
 	project 4.
@@ -32,6 +30,16 @@ public class FifteenServer {
 		String host = args[0];
 		int port = Integer.parseInt (args[1]);
 
+		DatagramSocket mailbox = new DatagramSocket
+			(new InetSocketAddress (host, port));
+
+
+		MailboxManager manager = new MailboxManager (mailbox);
+
+		for (;;) {
+			manager.receiveMessage();
+		}
+		/*
 		ServerSocket serversocket = new ServerSocket();
 		serversocket.bind (new InetSocketAddress (host, port));
 		
@@ -42,6 +50,8 @@ public class FifteenServer {
 			ViewProxy proxy = new ViewProxy (socket);
 			proxy.setViewListener (manager);
 		}
+		
+		*/
 
 	
 	}

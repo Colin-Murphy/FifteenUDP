@@ -1,30 +1,36 @@
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketAddress;
 
 
-
+/**
+	ViewProxy provides a communication interface for a client and a server
+	in the Fifteen game. Communication is done using UDP Datagrams
+	
+	@author Colin L Murphy <clm3888@rit.edu>
+	@version 5/2/14
+*/
 public class ViewProxy implements ModelListener {
 
-	private Socket socket;
-	private DataOutputStream out;
-	private DataInputStream in;
+	//Private variables
+	private DatagramSocket mailbox;
 	private ViewListener viewListener;
+	private SocketAddress clientAddress;
 	private String message;
 
 	/**
 		Create a new view proxy
+		@param mailbox The mailbox to listen to for datagrams
+		@param clientAddress the return address for the client
 	*/
-	public ViewProxy(Socket socket) {
-		this.socket = socket;
-
-		try {
-			out = new DataOutputStream (socket.getOutputStream());
-			in = new DataInputStream (socket.getInputStream());
-		}
-		
-		catch (IOException exc){}
+	public ViewProxy(DatagramSocket mailbox, SocketAddress clientAddress) {
+		this.mailbox = mailbox;
+		this.clientAddress = clientAddress;
 	}
 	
 	 /**
@@ -33,13 +39,7 @@ public class ViewProxy implements ModelListener {
 	* @param  viewListener  View listener.
 	*/
 	public void setViewListener (ViewListener viewListener) {
-		if (this.viewListener == null) {
-	 		this.viewListener = viewListener;
-	 		new ReaderThread() .start();
-	 	}
-		else {
-			 this.viewListener = viewListener;
-	 	}
+		this.viewListener = viewListener;
 	}
 	
 	/**
@@ -49,9 +49,13 @@ public class ViewProxy implements ModelListener {
 	public void joined(int id) {
 	
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			message = "id " + id + "\n";
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 		}
 		
 		catch (IOException exc){}
@@ -68,8 +72,12 @@ public class ViewProxy implements ModelListener {
 		message = "name " + id + " " + name  + "\n";
 		
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 		}
 		
 		catch (IOException exc){}
@@ -98,8 +106,12 @@ public class ViewProxy implements ModelListener {
 		message +="\n";
 		
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 		}
 		
 		catch (IOException exc){}
@@ -117,8 +129,12 @@ public class ViewProxy implements ModelListener {
 		message = "score " + id + " " + score + "\n";
 		
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 		}
 		
 		catch (IOException exc){}
@@ -133,8 +149,12 @@ public class ViewProxy implements ModelListener {
 		message = "turn " + id + "\n";
 		
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 		}
 		
 		catch (IOException exc){}
@@ -150,8 +170,12 @@ public class ViewProxy implements ModelListener {
 	
 		message = "win " + winner + "\n";
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 			
 		}
 		
@@ -167,67 +191,61 @@ public class ViewProxy implements ModelListener {
 	public void quit() {
 		message = "quit\n";
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream (baos);
 			out.writeBytes(message);
-			out.flush();
+			out.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send(new DatagramPacket (payload, payload.length, clientAddress));
 		}
 		
 		catch (IOException exc){}
 	
 	}
 	
-	private class ReaderThread extends Thread {
-		public void run() {
+	public boolean process(DatagramPacket datagram) {
+		try {
 		
-			try {
-				while (true) {
-					String input = in.readLine();
-				
-					String[] tokens = input.split(" ");
-					
+			DataInputStream in = new DataInputStream
+			(new ByteArrayInputStream(datagram.getData(), 0, datagram.getLength()));
+			String input = in.readLine();
+		
+			String[] tokens = input.split(" ");
+			
 
+			
+			switch(tokens[0]) {
+				case "join": 
+					String name = tokens[1];
+					viewListener.joined(ViewProxy.this, name);
+					break;
 					
-					switch(tokens[0]) {
-						case "join": 
-							String name = tokens[1];
-							viewListener.joined(ViewProxy.this, name);
-							break;
-							
-						case "digit": 
-							int digit = Integer.parseInt(tokens[1]);
-							viewListener.digit(digit);
-							break;
-							
-						case "newgame" :
-							viewListener.newGame();
-							break;
-							
-						case "quit": 
-							viewListener.quit();
-							break;
-							
-						default:
-							System.err.println("Bad message");
-							break;
-					}
+				case "digit": 
+					int digit = Integer.parseInt(tokens[1]);
+					viewListener.digit(digit);
+					break;
 					
-				}
-		
+				case "newgame" :
+					viewListener.newGame();
+					break;
+					
+				case "quit": 
+					viewListener.quit();
+					break;
+					
+				default:
+					System.err.println("Bad message");
+					break;
 			}
-			
-			catch (Exception exc) {}
-			
-			finally {
-				try {
-					socket.close();
-				}
-				catch (IOException exc){}
-			}
-			
-		
+				
+
+	
 		}
 		
+		catch (Exception exc) {}
 		
-		
+		return false;
+
 	}
 	
 	
