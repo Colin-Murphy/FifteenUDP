@@ -323,7 +323,7 @@ public class FifteenView
 		this.viewListener = viewListener;
 		
 
-		viewListener.joined(myName);
+		viewListener.joined(null, myName);
 	
 	}
 			

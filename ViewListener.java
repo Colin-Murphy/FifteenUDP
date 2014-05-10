@@ -9,11 +9,12 @@ import java.io.IOException;
 
 public interface ViewListener {
 
+	
 	/**
 		Player joined the server
 		@param name players name
 	*/
-	public void joined(String name);
+	public void joined(ViewProxy proxy, String name);
 	
 	/**
 		Player clicked a diget
@@ -33,9 +34,5 @@ public interface ViewListener {
 	*/
 	public void quit();
 	
-	/**
-		Set the model listener to listen to
-		@param modelListener The model listener to listen to
-	*/
-	public void setModelListener(ModelListener modelListener);
+
 }

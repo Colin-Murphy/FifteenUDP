@@ -48,11 +48,13 @@ public class ModelProxy implements ViewListener {
 		new ServerCom() .start();
 	}
 	
+	
+	
 	/**
 		Player joined the server
 		@param name players name
 	*/
-	public void joined(String name) {
+	public void joined(ViewProxy proxy, String name) {
 	
 		try {
 			output.writeBytes("join ");
@@ -65,7 +67,7 @@ public class ModelProxy implements ViewListener {
 	
 
 	/**
-		Player clicked a diget
+		Player clicked a digtt
 		@param digit the digit clicked
 	*/
 	public void digit(int digit) {
@@ -128,6 +130,7 @@ public class ModelProxy implements ViewListener {
 
 					String message = input.readLine();
 					
+					
 					String[] tokens = message.split(" ");
 					
 					
@@ -135,6 +138,7 @@ public class ModelProxy implements ViewListener {
 					//Define id and name outside of the switch so it wont throw errors from multiple definitions
 					int id;
 					String name;
+					
 					
 					//Handle the command appropriately
 					switch(tokens[0]) {
