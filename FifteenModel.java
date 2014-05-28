@@ -1,12 +1,11 @@
+import java.util.ArrayList;
+import java.util.Iterator;
+
 /**
 	The Model for a game of Fifteen
 	@author Colin L Murphy <clm3888@rit.edu>
 	@version 5/1/14
 */
-
-import java.util.ArrayList;
-import java.util.Iterator;
-
 public class FifteenModel implements ViewListener {
 
 	//Total number of players
@@ -239,8 +238,4 @@ public class FifteenModel implements ViewListener {
 	
 	}
 		
-		
-		
-
-
 }

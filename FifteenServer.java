@@ -1,6 +1,5 @@
 
-
-//ONLY NEEDED IN TCP VERSION, REMOVE IN UDP VERSION
+//Required for udp networking
 import java.net.InetSocketAddress;
 import java.net.DatagramSocket;
 /**
@@ -11,27 +10,37 @@ import java.net.DatagramSocket;
 	@version 5/2/14
 	
 */
-
-
 public class FifteenServer {
 	
 	/**
-		Main program
+		Run the main program
+		@param args Command line arguments
 	*/
 	public static void main(String[] args) throws Exception {
 	
-		System.out.println(args.length);
+	
 	
 		if (args.length != 2) {
 			System.err.println("Usage: java FifteenServer <serverhost> <serverport>");
 			System.exit(0);
 		}
 		
-		String host = args[0];
-		int port = Integer.parseInt (args[1]);
+		DatagramSocket mailbox = null;
+		
+		try {
+		
+			String host = args[0];
+			int port = Integer.parseInt (args[1]);
 
-		DatagramSocket mailbox = new DatagramSocket
-			(new InetSocketAddress (host, port));
+		
+			mailbox = new DatagramSocket
+				(new InetSocketAddress (host, port));
+		}
+		
+		catch (Exception e) {
+			System.err.println("Could not listen on requested address");
+			System.exit(0);
+		}
 
 
 		MailboxManager manager = new MailboxManager (mailbox);
@@ -39,19 +48,6 @@ public class FifteenServer {
 		for (;;) {
 			manager.receiveMessage();
 		}
-		/*
-		ServerSocket serversocket = new ServerSocket();
-		serversocket.bind (new InetSocketAddress (host, port));
-		
-		SessionManager manager = new SessionManager();
-		
-		while (true) {
-			Socket socket = serversocket.accept();
-			ViewProxy proxy = new ViewProxy (socket);
-			proxy.setViewListener (manager);
-		}
-		
-		*/
 
 	
 	}

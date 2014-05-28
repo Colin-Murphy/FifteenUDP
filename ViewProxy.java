@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
+import java.util.Scanner;
 
 
 /**
@@ -86,7 +87,7 @@ public class ViewProxy implements ModelListener {
 	
 	
 	/**
-		Set the 
+		Tell the player what digits are available
 		@param digits An array of booleans telling if that digit is available
 	*/
 	public void availableDigits(Boolean[] digits) {
@@ -203,12 +204,18 @@ public class ViewProxy implements ModelListener {
 	
 	}
 	
+	/**
+		Handle the incoming datagram and close the connection if necessary
+		@param datagram The incomming datagram
+	*/
 	public boolean process(DatagramPacket datagram) {
+		//Let the mailbox know if this session is ending
+		boolean discard = false;
 		try {
-		
-			DataInputStream in = new DataInputStream
-			(new ByteArrayInputStream(datagram.getData(), 0, datagram.getLength()));
-			String input = in.readLine();
+			Scanner in = new Scanner(new DataInputStream
+			(new ByteArrayInputStream(datagram.getData(), 0, datagram.getLength())));
+			String input = in.nextLine();
+			
 		
 			String[] tokens = input.split(" ");
 			
@@ -231,6 +238,7 @@ public class ViewProxy implements ModelListener {
 					
 				case "quit": 
 					viewListener.quit();
+					discard = true;
 					break;
 					
 				default:
@@ -244,7 +252,7 @@ public class ViewProxy implements ModelListener {
 		
 		catch (Exception exc) {}
 		
-		return false;
+		return discard;
 
 	}
 	

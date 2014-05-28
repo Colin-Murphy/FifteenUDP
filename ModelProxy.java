@@ -1,41 +1,40 @@
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.Socket;
-
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketAddress;
+import java.util.Scanner;
 
 
 /**
 	ModelProxy fills in for the Model in this netorked version of fifteen.
-	The model proxy communicates to the server over a TCP connection.
+	The model proxy communicates to the server over a UDP connection.
 	
 	@author Colin L Murphy<clm3888@rit.edu>
-	@version 4/12/14
+	@version 5/3/14
 */
 public class ModelProxy implements ViewListener {
 
-	private Socket socket;
+	private DatagramSocket mailbox;
+	private SocketAddress destination;
 	private DataOutputStream output;
-	private DataInputStream input;
 	private ModelListener modelListener;
 
 
 	/**
 		Create a new ModelProxy
-		@param socket The socket used for communications
+		@param mailbox The mailbox to use
+		@param destination The destination address
 	*/
-	public ModelProxy(Socket socket) {
+	public ModelProxy (DatagramSocket mailbox, SocketAddress destination) {
 	
-		
-		//Create the input and output streams
-		try {
 	
-			this.socket = socket;
-			output = new DataOutputStream(this.socket.getOutputStream());
-			input = new DataInputStream(this.socket.getInputStream());
-		}
-		
-		catch(IOException e){}
+		this.mailbox = mailbox;
+		this.destination = destination;
+
 	
 	}
 	
@@ -57,9 +56,15 @@ public class ModelProxy implements ViewListener {
 	public void joined(ViewProxy proxy, String name) {
 	
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream output = new DataOutputStream (baos);
 			output.writeBytes("join ");
 			output.writeBytes(name + "\n");
-			output.flush();
+			output.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send (
+				new DatagramPacket (payload, payload.length, destination));
+
 		}
 		
 		catch(IOException e){}
@@ -73,9 +78,14 @@ public class ModelProxy implements ViewListener {
 	public void digit(int digit) {
 	
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream output = new DataOutputStream (baos);
 			output.writeBytes("digit ");
 			output.writeBytes(digit + "\n");
-			output.flush();
+			output.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send (
+				new DatagramPacket (payload, payload.length, destination));
 	
 		}
 		
@@ -89,8 +99,13 @@ public class ModelProxy implements ViewListener {
 	public void newGame() {
 	
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream output = new DataOutputStream (baos);
 			output.writeBytes("newgame\n");
-			output.flush();
+			output.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send (
+				new DatagramPacket (payload, payload.length, destination));
 		
 		}
 		
@@ -105,8 +120,13 @@ public class ModelProxy implements ViewListener {
 	public void quit() {
 	
 		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream output = new DataOutputStream (baos);
 			output.writeBytes("quit\n");
-			output.flush();
+			output.close();
+			byte[] payload = baos.toByteArray();
+			mailbox.send (
+				new DatagramPacket (payload, payload.length, destination));
 		
 		}
 		
@@ -122,93 +142,99 @@ public class ModelProxy implements ViewListener {
 	private class ServerCom extends Thread {
 		public void run() {
 		
+			byte[] payload = new byte [128];
+		
 			try {
-				//Go forever
-				while(true) {
-					
-					//Get the next command		
+			
+				while (true) {
 
-					String message = input.readLine();
 					
-					
+					//Get the next command
+					DatagramPacket packet = new DatagramPacket (payload, payload.length);
+					mailbox.receive (packet);
+					Scanner input = new Scanner(new DataInputStream 
+						(new ByteArrayInputStream (payload, 0, packet.getLength())));	
+
+					String message = input.nextLine();
+
+				
 					String[] tokens = message.split(" ");
-					
-					
-					
+				
+				
+				
+				
 					//Define id and name outside of the switch so it wont throw errors from multiple definitions
 					int id;
 					String name;
-					
-					
+				
+				
 					//Handle the command appropriately
 					switch(tokens[0]) {
 						case "id":
 							id = Integer.parseInt(tokens[1]);
 							modelListener.joined(id);
 							break;
-						
+					
 						case "name":
 							id = Integer.parseInt(tokens[1]);
 							name = tokens[2];
-							
+						
 							modelListener.playerInfo(id, name);
 							break;
-						
+					
 						case "digits":
 							String digits = tokens[1];
 
 							Boolean[] available = new Boolean[digits.length()];
-							
+						
 							for (int i=0;i<available.length;i++) {
-							
+						
 								String s = digits.charAt(i) + "";
 								if (s.equals("1")) {
 
 									available[i] = true;
 								}
-								
+							
 								else {
 
 									available[i] = false;
 								}
-								
-								
+							
+							
 							}
 							modelListener.availableDigits(available);
 							break;
-						
+					
 						case "score":
 							id = Integer.parseInt(tokens[1]);
 							int score = Integer.parseInt(tokens[2]);
 							modelListener.playerScore(id,score);
 							break;
-						
+					
 						case "turn": 
 							id = Integer.parseInt(tokens[1]);
 							modelListener.playerTurn(id);
 							break;
-						
+					
 						case "win":
 							id = Integer.parseInt(tokens[1]);
 							modelListener.winner(id);
 							break;
-						
+					
 						case "quit":
 							modelListener.quit();
 							break;
 					}
-				
 				}
+				
+
 				
 			}
 			
 			catch (IOException exc) {}
 			
 			finally {
-				try {
-					socket.close();
-				}
-				catch (IOException exc){}
+				mailbox.close();
 			}
 			
 		}

@@ -23,6 +23,8 @@ public class SessionManager implements ViewListener {
 		@param proxy The view proxy needed for communicating back to the user
 	*/
 	public synchronized void joined(ViewProxy proxy, String name) {
+	
+
 		
 		FifteenModel model;
 		
@@ -65,6 +67,7 @@ public class SessionManager implements ViewListener {
 	
 	
 	//Doesnt use any of these, but they are required by the interface
+	
 	//These are all called on the model
 	/**
 		Player clicked a diget

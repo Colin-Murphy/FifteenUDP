@@ -1,5 +1,6 @@
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.net.DatagramSocket;
 
 
 /**
@@ -14,32 +15,65 @@ import java.net.Socket;
 public class Fifteen {
 	
 	/**
-		Setup the socket and create the view and model proxy
+		Setup the datagram socket and create the view and model proxy
 		@param args command line argument
 		@throws IOException on connection error
 	*/
 	public static void main(String[] args) throws Exception {
 	
 		//Verify arguments
-		if (args.length != 3) {
-			System.err.println("Usage: java fifteen <name> <host> <port>");
-			System.exit(1);
+		if (args.length != 5) {
+			usage();
 		}
 		
-		//Create the socket
-		String name = args[0];
-		String host = args[1];
-		int port = Integer.parseInt(args[2]);
+		DatagramSocket mailbox = null;
+		String serverHost = null;
+		int serverPort = 0;
+		String clientHost = null;
+		int clientPort = 0;
+		String name = null;
 		
-		Socket s = new Socket();
-		s.connect(new InetSocketAddress(host,port));
+		try {
+		
+			//Create the socket
+			name = args[0];
+			clientHost = args[1];
+			clientPort = Integer.parseInt(args[2]);
+			serverHost = args[3];
+			serverPort = Integer.parseInt(args[4]);
+		
+			mailbox = new DatagramSocket
+				(new InetSocketAddress (clientHost, clientPort));
+				
+		}
+		
+		catch (Exception e) {
+			usage();
+		}
 		
 		//Create the objects and set the appropriate listeners
-		ModelProxy proxy = new ModelProxy(s);
+		final ModelProxy proxy = new ModelProxy(mailbox, 
+			new InetSocketAddress (serverHost, serverPort));
 		FifteenView view = new FifteenView(name);
 		view.setViewListener(proxy);
 		proxy.setModelListener(view);
+		
+		//Handle timeouts
+		Runtime.getRuntime().addShutdownHook (new Thread() {
+			public void run() {
+				proxy.quit();
+			}
+		});
+
 	
 
+	}
+	
+	/**
+		Print the usage to standard error
+	*/
+	private static void usage() {
+		System.err.println("Usage: java fifteen <name> <clienthost> <clientport> <serverhost> <serverport>");
+		System.exit(0);
 	}
 }
